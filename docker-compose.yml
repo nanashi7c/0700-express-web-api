@@ -5,19 +5,20 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - .env.docker
+      - .env
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
   db:
     image: postgres:16-alpine
     container_name: my-web-api-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: express_web_api_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-express_web_api_db}
     ports:
-      - "5432:5432"
+      - "${HOST_DB_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data # データを永続化
     healthcheck:
@@ -25,6 +26,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 volumes:
   db-data:
