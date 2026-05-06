@@ -38,23 +38,36 @@ cd 0700-express-web-api
 cp .env.example .env
 ```
 
-### 3. Docker コンテナの起動
+### 3. 依存パッケージのインストール
 
 ```bash
-docker compose up -d --build
+npm install
 ```
 
-### 4. 動作確認
+### 4. Docker コンテナの起動
 
 ```bash
-# コンテナの状態確認
+docker compose up -d
+```
+
+### 5. アプリの起動（ホスト側）
+
+```bash
+npx prisma generate
+npm run dev
+```
+
+### 6. 動作確認
+
+```bash
+# DB コンテナの状態確認
 docker compose ps
 
 # Express への疎通確認
 curl http://localhost:3000/
 
-# PostgreSQL への接続確認（ホストから）
-psql -h 127.0.0.1 -p 5432 -U postgres -d express_web_api_db
+# DB 接続確認 (アプリ経由)
+curl http://localhost:3000/health
 ```
 
 ## プロジェクト構成
@@ -65,10 +78,8 @@ psql -h 127.0.0.1 -p 5432 -U postgres -d express_web_api_db
 │   └── schema.prisma         # Prisma スキーマ定義
 ├── src/
 │   └── index.ts              # Express エントリポイント
-├── .dockerignore
 ├── .env.example              # ローカル用環境変数テンプレート
-├── docker-compose.yml        # サービス定義 (app + db)
-├── Dockerfile                # アプリコンテナのビルド定義
+├── docker-compose.yml        # DB サービス定義
 ├── package.json
 ├── prisma.config.ts          # Prisma CLI 設定
 ├── README.md
