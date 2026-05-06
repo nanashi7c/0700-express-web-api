@@ -19,7 +19,7 @@ Express + TypeScript + Prisma + PostgreSQL によるWeb APIプロジェクト。
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) がインストール済みであること
 - Git がインストール済みであること
 
-> **ポート 5432 を占有するローカル PostgreSQL がある場合**、停止するか、`docker-compose.yml` のホスト側ポートを変更する（例: `"5433:5432"`）。
+**ポート 5432 を占有するローカル PostgreSQL がある場合**、`.env` に `HOST_DB_PORT=5433` を追加してください（ホスト側のポートのみ変更されます）。
 
 ## セットアップ
 
@@ -32,17 +32,11 @@ cd 0700-express-web-api
 
 ### 2. 環境変数ファイルの作成
 
-`.env.example` および `.env.docker.example` をコピーして、それぞれ `.env`、`.env.docker` を作成します。
+`.env.example` をコピーして `.env` を作成します。
 
 ```bash
 cp .env.example .env
-cp .env.docker.example .env.docker
 ```
-
-| ファイル      | 用途                                     | DB ホスト名                    |
-| ------------- | ---------------------------------------- | ------------------------------ |
-| `.env`        | ローカル（ホスト）から実行する場合の設定 | `localhost`                    |
-| `.env.docker` | Docker コンテナ内で読み込む設定          | `db`（compose 内のサービス名） |
 
 ### 3. Docker コンテナの起動
 
@@ -73,7 +67,6 @@ psql -h 127.0.0.1 -p 5432 -U postgres -d express_web_api_db
 │   └── index.ts              # Express エントリポイント
 ├── .dockerignore
 ├── .env.example              # ローカル用環境変数テンプレート
-├── .env.docker.example       # Docker 用環境変数テンプレート
 ├── docker-compose.yml        # サービス定義 (app + db)
 ├── Dockerfile                # アプリコンテナのビルド定義
 ├── package.json
