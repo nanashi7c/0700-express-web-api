@@ -9,6 +9,14 @@ const port = Number(process.env.PORT) || 3000;
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
+try {
+  await prisma.$queryRaw`SELECT 1`;
+  console.log("DB connection: ok");
+} catch (err) {
+  console.error("DB connection failed:", err);
+  process.exit(1);
+}
+
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -18,12 +26,11 @@ app.get("/", (_req, res) => {
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", db: "connected" });
+    res.json({ status: "ok" });
   } catch (err) {
+    console.error("Health check failed:", err);
     res.status(503).json({
-      status: "ng",
-      db: "disconnected",
-      message: (err as Error).message,
+      message: "Unexpected Error",
     });
   }
 });
