@@ -10,5 +10,83 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  deactive
+}
+
+enum TaskStatus {
+  scheduled
+  completed
+  archived
+}
+
+enum TaskKind {
+  task
+  milestone
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  username     String
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  projects Project[]
+  tasks    Task[]
+
+  @@map("users")
+}
+
+model Project {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  name       String
+  slug       String
+  goal       String?
+  shouldbe   String?
+  color      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deadline   DateTime?
+  finishedAt DateTime?
+  startedAt  DateTime?
+  startingAt DateTime?
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@unique([userId, slug])
+  @@map("projects")
+}
+
+model Task {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @db.Uuid
+  projectId String  @db.Uuid
+  parentId  String? @db.Uuid
+
+  title       String
+  description String
+  kind        TaskKind   @default(task)
+  status      TaskStatus @default(scheduled)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  finishedAt  DateTime?
+  startedAt   DateTime?
+  archivedAt  DateTime?
+  startingAt  DateTime?
+  deadline    DateTime?
+
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent   Task?   @relation("TaskChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children Task[]  @relation("TaskChildren")
+
+  @@map("tasks")
 }
