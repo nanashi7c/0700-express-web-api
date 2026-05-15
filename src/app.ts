@@ -1,13 +1,11 @@
 import "dotenv/config";
-import { PrismaClient } from "./generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
 import express from "express";
+import { prisma } from "./utils/prisma.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import apiRoutes from "./routes/index.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
 
 try {
   await prisma.$queryRaw`SELECT 1`;
@@ -34,6 +32,9 @@ app.get("/health", async (_req, res) => {
     });
   }
 });
+
+app.use("/api/v1", apiRoutes);
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
