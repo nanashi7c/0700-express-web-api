@@ -1,0 +1,150 @@
+###
+# /auth エンドポイントのテストケース
+# テスト項目 #1 〜 #12
+# 実行順: 上から順に。#4 は #1 の成功を前提とする
+###
+
+@host = http://localhost:3000/api/v1
+@email = alice@example.com
+@password = password123
+
+
+### #1 signup 正常系 → 200 { data: { uuid, accessToken, refreshToken } }
+# 前提: alice@example.com が DB に存在しないこと（重複時は users テーブル削除 or Prisma Studio で削除）
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "{{email}}",
+  "email_confirmation": "{{email}}",
+  "password": "{{password}}",
+  "password_confirmation": "{{password}}"
+}
+
+
+### #2 signup email_confirmation 不一致 → 400 { message: "email_confirmation does not match" }
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "test2",
+  "email": "test2@example.com",
+  "email_confirmation": "different@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+
+### #3 signup password_confirmation 不一致 → 400 { message: "password_confirmation does not match" }
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "test3",
+  "email": "test3@example.com",
+  "email_confirmation": "test3@example.com",
+  "password": "password123",
+  "password_confirmation": "different123"
+}
+
+
+### #4 signup email 重複 → 409 { message: "Email already in use" }
+# 前提: #1 を実行して alice が DB に存在すること
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "alice-duplicate",
+  "email": "{{email}}",
+  "email_confirmation": "{{email}}",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+
+### #5 signup username 欠落 → 400 { message: "username is required" }
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test5@example.com",
+  "email_confirmation": "test5@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+
+### #6 signup email 不正形式 → 400 { message: "email must be a valid email" }
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "test6",
+  "email": "not-an-email",
+  "email_confirmation": "not-an-email",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+
+### #7 signup password 8文字未満 → 400 { message: "password must be at least 8 characters" }
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "test7",
+  "email": "test7@example.com",
+  "email_confirmation": "test7@example.com",
+  "password": "abc",
+  "password_confirmation": "abc"
+}
+
+
+### #8 login 正常系 → 200 { data: { uuid, accessToken, refreshToken } }
+# 前提: #1 を実行して alice が DB に存在すること
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### #9 login 存在しない email → 401 { message: "Invalid email or password" }
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com",
+  "password": "password123"
+}
+
+
+### #10 login パスワード間違い → 401 { message: "Invalid email or password" }
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrong-password"
+}
+
+
+### #11 login email 欠落 → 400 { message: "email is required" }
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "password": "password123"
+}
+
+
+### #12 login password 欠落 → 400 { message: "password is required" }
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}

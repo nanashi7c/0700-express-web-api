@@ -1,0 +1,53 @@
+###
+# /users エンドポイントのテストケース
+# テスト項目 #13 〜 #17
+# 実行順: まず "login" を実行して token を取得 → 各テストを実行
+###
+
+@host = http://localhost:3000/api/v1
+@email = alice@example.com
+@password = password123
+
+
+### login（token 取得用 — 他のテストの前提）
+# 前提: alice@example.com が DB に存在し、password123 でログイン可能であること
+# 後続テストでは {{login.response.body.data.accessToken}} を参照する
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### #13 /users/me 正常系 → 200 { data: { id, username, email, status: "active" } }
+GET {{host}}/users/me
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #14 /users/me 認証ヘッダー無し → 401 { message: "Authentication required" }
+GET {{host}}/users/me
+
+
+### #15 /users/me "Bearer " 前置詞無し → 401 { message: "Authentication required" }
+GET {{host}}/users/me
+Authorization: {{login.response.body.data.accessToken}}
+
+
+### #16 /users/me 不正トークン → 401 { message: "Invalid or expired token" }
+GET {{host}}/users/me
+Authorization: Bearer invalid.token.here
+
+
+### #17 /users/me 期限切れトークン → 401 { message: "Invalid or expired token" }
+# 実行手順:
+#   1. .env で JWT_ACCESS_EXPIRES_IN="2s" に一時的に変更
+#   2. サーバ再起動（Ctrl+C → npm run dev）
+#   3. 上の "login" を再実行して新しい accessToken を取得
+#   4. 3秒以上待機
+#   5. このリクエストを実行
+#   6. テスト後、.env を "1h" に戻してサーバ再起動
+GET {{host}}/users/me
+Authorization: Bearer {{login.response.body.data.accessToken}}
