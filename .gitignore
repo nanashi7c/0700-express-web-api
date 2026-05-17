@@ -4,4 +4,3 @@ dist/
 .env
 src/generated/
 CLAUDE.local.md
-docs/openapi.yaml
