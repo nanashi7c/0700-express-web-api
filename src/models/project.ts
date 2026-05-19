@@ -10,7 +10,6 @@ const projectSelect = {
   deadline: true,
   startingAt: true,
   startedAt: true,
-  status: true,
   createdAt: true,
   updatedAt: true,
 } as const;
