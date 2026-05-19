@@ -1,0 +1,94 @@
+###
+# /users/projects エンドポイントのテストケース（ローカル用、コミット対象外）
+# テスト項目 #1 〜 #13
+# 実行順: まず "login" を実行して token を取得 → 各テストを実行
+###
+
+@host = http://localhost:3000/api/v1
+@email = alice@example.com
+@password = password123
+
+###
+# 前提（事前に Prisma Studio 等で投入しておく）:
+# - alice@example.com が DB に存在しログイン可能（auth.http #1 で作成可能）
+# - alice 所有の Project が少なくとも 1 件（slug は {{aliceSlug}} を参照）
+# - bob@example.com が DB に存在し、bob 所有の Project が 1 件（slug は {{bobSlug}} を参照）
+###
+
+@aliceSlug = my-project
+@bobSlug = bob-only-project
+
+
+### login（token 取得用 — 他のテストの前提）
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### #1 list projects 正常系（パラメータ無し） → 200 { data: [...], pageInfo: {...} }
+GET {{host}}/users/projects
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #2 list projects page と limit を指定 → 200
+GET {{host}}/users/projects?page=1&limit=5
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #3 list projects 認証ヘッダー無し → 401 { message: "Authentication required" }
+GET {{host}}/users/projects
+
+
+### #4 list projects "Bearer " 前置詞無し → 401 { message: "Authentication required" }
+GET {{host}}/users/projects
+Authorization: {{login.response.body.data.accessToken}}
+
+
+### #5 list projects 不正トークン → 401 { message: "Invalid or expired token" }
+GET {{host}}/users/projects
+Authorization: Bearer invalid.token.here
+
+
+### #6 list projects page=0（最小値 1 未満） → 400 { message: "page ..." }
+GET {{host}}/users/projects?page=0
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #7 list projects page が整数でない → 400 { message: "page ..." }
+GET {{host}}/users/projects?page=abc
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #8 list projects limit=0（最小値 1 未満） → 400 { message: "limit ..." }
+GET {{host}}/users/projects?limit=0
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #9 list projects limit が整数でない → 400 { message: "limit ..." }
+GET {{host}}/users/projects?limit=xyz
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #10 get project by slug 正常系 → 200 { data: { id, name, slug, ..., stats: {...} } }
+GET {{host}}/users/projects/{{aliceSlug}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #11 get project by slug 認証ヘッダー無し → 401 { message: "Authentication required" }
+GET {{host}}/users/projects/{{aliceSlug}}
+
+
+### #12 get project by slug 存在しない slug → 404 { message: "Project not found" }
+GET {{host}}/users/projects/non-existent-slug
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #13 get project by slug 他ユーザーの slug → 404 { message: "Project not found" }
+# 前提: bob 所有の Project が {{bobSlug}} で存在し、alice ではアクセスできないことを確認
+GET {{host}}/users/projects/{{bobSlug}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
