@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import * as userModel from "../models/userModel.js";
+import * as userModel from "../models/user.js";
 import { NotFoundError, UnauthorizedError } from "../utils/errors.js";
 
 export async function getMe(req: Request, res: Response): Promise<void> {

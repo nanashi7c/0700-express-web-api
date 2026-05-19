@@ -1,30 +1,50 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import { ConflictError, UnauthorizedError } from "../utils/errors.js";
-import * as userModel from "../models/userModel.js";
+import * as userModel from "../models/user.js";
 import {
-  requireEmail,
-  requireMatch,
-  requireString,
+  isEmail,
+  matches,
+  isNonEmptyString,
+  hasMinLength,
 } from "../utils/validators.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
+import { badRequest } from "../utils/httpResponses.js";
 
 export async function signup(req: Request, res: Response): Promise<void> {
-  const username = requireString(req.body?.username, "username");
-  const email = requireEmail(req.body?.email);
-  const emailConfirmation = requireEmail(
-    req.body?.email_confirmation,
-    "email_confirmation",
-  );
-  const password = requireString(req.body?.password, "password", {
-    minLength: 8,
-  });
-  const passwordConfirmation = requireString(
-    req.body?.password_confirmation,
-    "password_confirmation",
-  );
-  requireMatch(email, emailConfirmation, "email_confirmation");
-  requireMatch(password, passwordConfirmation, "password_confirmation");
+  const username = req.body?.username;
+  if (!isNonEmptyString(username)) {
+    badRequest(res, "username is required");
+    return;
+  }
+
+  const email = req.body?.email;
+  if (!isNonEmptyString(email)) {
+    badRequest(res, "email is required");
+    return;
+  }
+  if (!isEmail(email)) {
+    badRequest(res, "email must be a valid email address");
+    return;
+  }
+  const password = req.body?.password;
+  if (!isNonEmptyString(password)) {
+    badRequest(res, "password is required");
+    return;
+  }
+  if (!hasMinLength(password, 8)) {
+    badRequest(res, "password must be at least 8 characters");
+    return;
+  }
+  if (!matches(email, req.body?.email_confirmation)) {
+    badRequest(res, "email confirmation does not match");
+    return;
+  }
+  if (!matches(password, req.body?.password_confirmation)) {
+    badRequest(res, "password confirmation does not match");
+    return;
+  }
+
   const existing = await userModel.findByEmail(email);
   if (existing) {
     throw new ConflictError("Email already in use");
@@ -39,8 +59,17 @@ export async function signup(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const email = requireEmail(req.body?.email);
-  const password = requireString(req.body?.password, "password");
+  const email = req.body?.email;
+  if (!isEmail(email)) {
+    badRequest(res, "email is required or invalid");
+    return;
+  }
+  const password = req.body?.password;
+  if (!isNonEmptyString(password)) {
+    badRequest(res, "password is required");
+    return;
+  }
+
   const user = await userModel.findByEmail(email);
   if (!user) {
     throw new UnauthorizedError("Invalid email or password");
