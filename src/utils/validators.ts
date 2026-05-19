@@ -14,26 +14,14 @@ export function matches(a: string, b: string): boolean {
   return a === b;
 }
 
-export function optionalInt(
-  value: unknown,
-  field: string,
-  opts?: { min?: number; max?: number },
-): number | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
-  const str = Array.isArray(value) ? value[0] : value;
+export function isIntegerString(value: unknown): value is string {
+  return typeof value === "string" && /^-?\d+$/.test(value);
+}
 
-  if (typeof str !== "string" || !/^-?\d+$/.test(str)) {
-    throw new ValidationError(`${field} must be an integer`);
-  }
+export function isAtLeast(n: number, min: number): boolean {
+  return n >= min;
+}
 
-  const n = Number(str);
-
-  if (opts?.min !== undefined && n < opts.min)
-    throw new ValidationError(`${field} must be at least ${opts.min}`);
-
-  if (opts?.max !== undefined && n > opts.max) {
-    throw new ValidationError(`${field} must be at most ${opts.max}`);
-  }
-
-  return n;
+export function isAtMost(n: number, max: number): boolean {
+  return n <= max;
 }
