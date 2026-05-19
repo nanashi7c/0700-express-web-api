@@ -13,3 +13,15 @@ export function hasMinLength(value: string, min: number): boolean {
 export function matches(a: string, b: string): boolean {
   return a === b;
 }
+
+export function isIntegerString(value: unknown): value is string {
+  return typeof value === "string" && /^-?\d+$/.test(value);
+}
+
+export function isAtLeast(n: number, min: number): boolean {
+  return n >= min;
+}
+
+export function isAtMost(n: number, max: number): boolean {
+  return n <= max;
+}
