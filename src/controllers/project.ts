@@ -8,7 +8,7 @@ import { badRequest } from "../utils/httpResponses.js";
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 
-export async function listProjects(req: Request, res: Response): Promise<void> {
+export async function list(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new UnauthorizedError("Unauthorized");
 
   const pageParsed = parseOptionalInt(req.query.page, { min: 1 });
@@ -51,7 +51,7 @@ export async function listProjects(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function getProjectBySlug(
+export async function getBySlug(
   req: Request,
   res: Response,
 ): Promise<void> {
