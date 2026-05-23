@@ -25,3 +25,27 @@ export function isAtLeast(n: number, min: number): boolean {
 export function isAtMost(n: number, max: number): boolean {
   return n <= max;
 }
+
+export function isOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T {
+  return (
+    typeof value === "string" && (allowed as readonly string[]).includes(value)
+  );
+}
+
+export function isUuid(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
+}
+
+export function isDateString(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false;
+  const d = new Date(value);
+  return !Number.isNaN(d.getTime());
+}

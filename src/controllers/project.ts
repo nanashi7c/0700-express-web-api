@@ -4,9 +4,7 @@ import * as projectModel from "../models/project.js";
 import { isNonEmptyString } from "../utils/validators.js";
 import { parseOptionalInt } from "../utils/parsers.js";
 import { badRequest } from "../utils/httpResponses.js";
-
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 20;
+import { DEFAULT_LIMIT, DEFAULT_PAGE } from "../utils/pagenation.js";
 
 export async function list(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new UnauthorizedError("Unauthorized");
@@ -51,10 +49,7 @@ export async function list(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function getBySlug(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getBySlug(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new UnauthorizedError("Unauthorized");
   const { slug } = req.params;
   if (!isNonEmptyString(slug)) {

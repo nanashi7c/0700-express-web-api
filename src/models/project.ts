@@ -1,6 +1,6 @@
 import { prisma } from "../utils/prisma.js";
 
-const projectSelect = {
+export const projectSelect = {
   id: true,
   name: true,
   slug: true,
