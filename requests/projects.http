@@ -29,6 +29,11 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
+### alice の Project UUID 取得（後続テストの前提）
+# @name aliceProject
+GET {{host}}/users/projects/my-project
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
 
 ### #1 list projects 正常系（パラメータ無し） → 200 { data: [...], pageInfo: {...} }
 GET {{host}}/users/projects
