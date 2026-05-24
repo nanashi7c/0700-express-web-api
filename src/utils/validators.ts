@@ -46,6 +46,13 @@ export function isUuid(value: unknown): value is string {
 
 export function isDateString(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false;
-  const d = new Date(value);
-  return !Number.isNaN(d.getTime());
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return false;
+  const [, y, mo, d] = m;
+  const date = new Date(`${y}-${mo}-${d}T00:00:00Z`);
+  return (
+    date.getUTCFullYear() === Number(y) &&
+    date.getUTCMonth() + 1 === Number(mo) &&
+    date.getUTCDate() === Number(d)
+  );
 }
