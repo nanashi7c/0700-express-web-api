@@ -1,0 +1,381 @@
+###
+# /users/tasks エンドポイントのテストケース（ローカル用、コミット対象外）
+# テスト項目 #1 〜 #34
+# 実行順: まず "login" を実行して token を取得 → 各テストを実行
+###
+
+@host = http://localhost:3000/api/v1
+@email = alice@example.com
+@password = password123
+
+###
+# 前提（事前に Prisma Studio 等で投入しておく）:
+# - alice@example.com が DB に存在しログイン可能（auth.http #1 で作成可能）
+# - alice 所有の Project が少なくとも 1 件（id は {{aliceProjectId}} を参照）
+# - alice 所有の Task が少なくとも 1 件（id は {{aliceTaskId}} を参照）
+# - bob@example.com が DB に存在し、bob 所有の Project / Task が各 1 件
+#   （id は {{bobProjectId}} / {{bobTaskId}} を参照）
+
+
+### login（token 取得用 — 他のテストの前提）
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### alice の Project UUID 取得（後続テストの前提）
+# @name aliceProject
+GET {{host}}/users/projects/my-project
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### alice の Task UUID 取得（後続テストの前提）
+# @name aliceTask
+GET {{host}}/users/tasks?limit=1
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+# - 下記の UUID は実 DB の値に置き換えること
+###
+
+# @aliceProjectId は aliceProject リクエストのレスポンスから動的に取得
+# @aliceProjectId = 00000000-0000-0000-0000-000000000001
+@aliceProjectId = {{aliceProject.response.body.data.id}}
+# @aliceTaskId は aliceTask リクエストのレスポンスから動的に取得
+# @aliceTaskId = 00000000-0000-0000-0000-000000000011
+@aliceTaskId = {{aliceTask.response.body.data[0].id}}
+@bobProjectId = 00000000-0000-0000-0000-000000000002
+@bobTaskId = 00000000-0000-0000-0000-000000000012
+@notExistId = 00000000-0000-0000-0000-000000000099
+
+
+### ============================================================
+### GET /users/tasks  (list tasks)
+### ============================================================
+
+
+### #1 list tasks 正常系（パラメータ無し） → 200 { data: [...], pageInfo: {...} }
+GET {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #2 list tasks page と limit を指定 → 200
+GET {{host}}/users/tasks?page=1&limit=5
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #3 list tasks status フィルタ単一指定 → 200（scheduled のみ）
+GET {{host}}/users/tasks?status=scheduled
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #4 list tasks status フィルタ複数指定 → 200（scheduled と completed）
+GET {{host}}/users/tasks?status=scheduled&status=completed
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #5 list tasks 認証ヘッダー無し → 401 { message: "Authentication required" }
+GET {{host}}/users/tasks
+
+
+### #6 list tasks 不正トークン → 401 { message: "Invalid or expired token" }
+GET {{host}}/users/tasks
+Authorization: Bearer invalid.token.here
+
+
+### #7 list tasks page=0（最小値 1 未満） → 400 { message: "page ..." }
+GET {{host}}/users/tasks?page=0
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #8 list tasks page が整数でない → 400 { message: "page ..." }
+GET {{host}}/users/tasks?page=abc
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #9 list tasks limit=0（最小値 1 未満） → 400 { message: "limit ..." }
+GET {{host}}/users/tasks?limit=0
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #10 list tasks status が許可外の値 → 400 { message: "status ..." }
+GET {{host}}/users/tasks?status=invalid
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### ============================================================
+### POST /users/tasks  (create task)
+### ============================================================
+
+
+### #11 create task 正常系（全項目指定） → 201 { data: { id, ..., project: {...} } }
+# @name createdTask
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "新規タスク",
+  "description": "テストで作成されたタスク",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}",
+  "startingAt": "2026-06-01T00:00:00.000Z"
+}
+
+
+### #12 create task startingAt 省略（任意項目なし） → 201
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "startingAt 無しタスク",
+  "description": "任意項目なし",
+  "kind": "milestone",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #13 create task title 欠落 → 400 { message: "title is required" }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "description": "title なし",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #14 create task description 欠落 → 400 { message: "description is required" }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "description なし",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #15 create task kind が許可外の値 → 400 { message: "kind ..." }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "kind 不正",
+  "description": "kind に不正値",
+  "kind": "invalid",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #16 create task status が許可外の値 → 400 { message: "status ..." }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "status 不正",
+  "description": "status に不正値",
+  "kind": "task",
+  "status": "invalid",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #17 create task deadline が不正な日付 → 400 { message: "deadline ..." }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "deadline 不正",
+  "description": "deadline が日付として無効",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "not-a-date",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### #18 create task projectId が UUID でない → 400 { message: "projectId must be a valid UUID" }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "projectId 不正",
+  "description": "projectId が UUID 形式でない",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "not-a-uuid"
+}
+
+
+### #19 create task 他ユーザーの projectId → 400 { message: "projectId does not exist or is not owned by the user" }
+POST {{host}}/users/tasks
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "他人の project",
+  "description": "bob のプロジェクトに作ろうとする",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{bobProjectId}}"
+}
+
+
+### #20 create task 認証ヘッダー無し → 401 { message: "Authentication required" }
+POST {{host}}/users/tasks
+Content-Type: application/json
+
+{
+  "title": "認証なし",
+  "description": "test",
+  "kind": "task",
+  "status": "scheduled",
+  "deadline": "2026-12-31T23:59:59.000Z",
+  "projectId": "{{aliceProjectId}}"
+}
+
+
+### ============================================================
+### GET /users/tasks/:id  (get task by id)
+### ============================================================
+
+
+### #21 get task by id 正常系 → 200 { data: { id, title, ..., project: {...} } }
+GET {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #22 get task by id 不正な UUID → 400 { message: "id must be a valid UUID" }
+GET {{host}}/users/tasks/not-a-uuid
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #23 get task by id 存在しない id → 404 { message: "Task not found" }
+GET {{host}}/users/tasks/{{notExistId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #24 get task by id 他ユーザーの id → 404 { message: "Task not found" }
+GET {{host}}/users/tasks/{{bobTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #25 get task by id 認証ヘッダー無し → 401 { message: "Authentication required" }
+GET {{host}}/users/tasks/{{aliceTaskId}}
+
+
+### ============================================================
+### PATCH /users/tasks/:id  (update task)
+### ============================================================
+
+
+### #26 update task 部分更新（title と status のみ） → 200
+PATCH {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "更新後タイトル",
+  "status": "completed"
+}
+
+
+### #27 update task 全項目更新 → 200
+PATCH {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "全更新タイトル",
+  "description": "全更新 description",
+  "kind": "milestone",
+  "status": "archived",
+  "deadline": "2027-01-01T00:00:00.000Z",
+  "projectId": "{{aliceProjectId}}",
+  "startingAt": "2026-07-01T00:00:00.000Z"
+}
+
+
+### #28 update task status が許可外の値 → 400 { message: "status ..." }
+PATCH {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "status": "invalid"
+}
+
+
+### #29 update task projectId を他ユーザーの project に → 400 { message: "projectId does not exist or is not owned by the user" }
+PATCH {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "projectId": "{{bobProjectId}}"
+}
+
+
+### #30 update task 存在しない id → 404 { message: "Task not found" }
+PATCH {{host}}/users/tasks/{{notExistId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "存在しない id"
+}
+
+
+### #31 update task 認証ヘッダー無し → 401 { message: "Authentication required" }
+PATCH {{host}}/users/tasks/{{aliceTaskId}}
+Content-Type: application/json
+
+{
+  "title": "認証なし"
+}
+
+
+### ============================================================
+### DELETE /users/tasks/:id  (delete task)
+### ============================================================
+
+
+### #32 delete task 正常系 → 200 { data: { 削除前の task } }
+# 注意: 実行すると task が消えるので、先に #11 で task を作成してその id を使うか、
+# シードを再投入できる準備をしてから実行すること
+DELETE {{host}}/users/tasks/{{aliceTaskId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #33 delete task 存在しない id → 404 { message: "Task not found" }
+DELETE {{host}}/users/tasks/{{notExistId}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+
+### #34 delete task 認証ヘッダー無し → 401 { message: "Authentication required" }
+DELETE {{host}}/users/tasks/{{aliceTaskId}}

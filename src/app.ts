@@ -3,6 +3,7 @@ import express from "express";
 import { prisma } from "./utils/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/index.js";
+import morgan from "morgan";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -15,6 +16,7 @@ try {
   process.exit(1);
 }
 
+app.use(morgan("combined"));
 app.use(express.json());
 
 app.get("/", (_req, res) => {
