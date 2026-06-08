@@ -1,6 +1,6 @@
-# express-web-api
+# express-task-api
 
-Express + TypeScript + Prisma + PostgreSQL によるWeb APIプロジェクト。Docker ベースの開発環境で動作します。
+タスク管理REST API。JWT認証のもと、プロジェクト単位でタスク(予定・完了・アーカイブ)を管理する。Express + TypeScript + Prisma + PostgreSQLで実装し、Dockerベースの開発環境で動作する。
 
 ## 技術スタック
 
