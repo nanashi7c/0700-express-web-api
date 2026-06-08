@@ -1,4 +1,4 @@
-# 0700-express-web-api
+# express-web-api
 
 Express + TypeScript + Prisma + PostgreSQL によるWeb APIプロジェクト。Docker ベースの開発環境で動作します。
 
@@ -13,6 +13,13 @@ Express + TypeScript + Prisma + PostgreSQL によるWeb APIプロジェクト。
 | データベース      | PostgreSQL 16           |
 | コンテナ          | Docker / Docker Compose |
 | 認証              | bcryptjs / jsonwebtoken |
+
+## 仕様
+
+REST APIの仕様はOpenAPI 3.0で定義し、下記に記載。
+**Swagger UI**: https://express-web-api.netlify.app
+公開元ドキュメント: `docs/openapi.yaml`
+![Swagger UIで表示したAPIエンドポイント一覧](assets/swagger-ui.png)
 
 ## 前提条件
 
