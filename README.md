@@ -17,7 +17,9 @@ Express + TypeScript + Prisma + PostgreSQL によるWeb APIプロジェクト。
 ## 仕様
 
 REST APIの仕様はOpenAPI 3.0で定義し、下記に記載。
+
 **Swagger UI**: https://express-web-api.netlify.app
+
 公開元ドキュメント: `docs/openapi.yaml`
 ![Swagger UIで表示したAPIエンドポイント一覧](assets/swagger-ui.png)
 
