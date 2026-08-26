@@ -2,6 +2,9 @@
 
 タスク管理REST API。JWT認証のもと、プロジェクト単位でタスク(予定・完了・アーカイブ)を管理する。Express + TypeScript + Prisma + PostgreSQLで実装し、Dockerベースの開発環境で動作する。
 
+https://github.com/nanashi7c/ws-01-0100-fe-materials
+0700-express-web-apiの実装を行っています。
+
 ## 技術スタック
 
 | カテゴリ          | 採用技術                |
